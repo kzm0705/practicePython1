@@ -1,5 +1,5 @@
 import PySimpleGUI as sg
-from PIL import Image
+from PIL import Image, ImageTk
 import os
 
 sg.theme('DarkBrown1')
@@ -22,16 +22,17 @@ def main():
     frame_1 = [[sg.Text('フォルダの読み込み'), sg.Button('参照', key='-browsefile-')],[sg.Listbox(values=[], size=(60, 30), key='-image_list-',enable_events=True)]]
 
     frame_in_frame = [
-                     [sg.Button('前へ', key='-back-'), sg.Button('次へ', key='-next-')],
-                     [sg.Text('',key='text', size=(60,1))], [sg.Text('',key='-filepath-')]
+                     [sg.Button('前へ', key='-back-',pad=((5,7),(15,0))), sg.Button('次へ', key='-next-',pad=((7,5),(15,0))),sg.Slider(range=(100,400), key='-resize-', default_value=250, enable_events=True, orientation='h',pad=((30,0),(0,0))), ],
+                     [sg.Button('2/3',key='-decrease-'),sg.Text('',key='text', size=(60,1),pad=((10,0),(20,0)))], [sg.Text('',key='-filepath-',pad=((0,0),(30,0)))]
                      ]
     frame_2 = [
                [sg.Image(filename='.\\temp\\resized_image.png', key='-image-', size=(400, 400))],
-               [sg.Frame('group', layout=frame_in_frame, size=(400,200))]
+               [sg.Frame('group', layout=frame_in_frame, size=(400,200), pad=((0,0),(0,0)),element_justification='center', key='frame')]
                ]
     
     layout = [
-        [sg.Frame('ローカル画像検索',frame_1,size=(250,600), expand_x=True, expand_y=True), sg.Frame('画像表示',frame_2,size=(450, 600))],
+        [sg.Frame('ローカル画像検索',frame_1,size=(250,600),),
+         sg.Frame('画像表示',frame_2,size=(450, 600),)],
             ]
 
     window = sg.Window('ポケモン図鑑', layout, size=(700,600), )
@@ -54,11 +55,17 @@ def main():
                 current_index = 0
                 image_resize(images_dict[image_key[current_index]])
                 window['-image-'].update(filename=f'./temp/{image_key[current_index]}')
+                window['text'].update(image_key[current_index])
             else:sg.popup('表示できる画像がありません', title='error')
 
         #リストボックスから画像をクリックしたときに画像を表示
         if event == '-image_list-':
             key = values['-image_list-'][0]
+            for i , v in enumerate(image_key):
+                if key == v:
+                    current_index = i
+                else:pass
+
             #画像のリサイズ
             image_resize(images_dict[key])
             window['-image-'].update(filename=f'./temp/{key}')
@@ -74,6 +81,7 @@ def main():
                     current_index = len(image_key) - 1
                 image_resize(images_dict[image_key[current_index]])
                 window['-image-'].update(filename=f'./temp/{image_key[current_index]}')
+                window['text'].update(image_key[current_index])
 
         #次へ画像を表示したとき
         if event == '-next-':
@@ -85,6 +93,18 @@ def main():
                     current_index = 0
                 image_resize(images_dict[image_key[current_index]])
                 window['-image-'].update(filename=f'./temp/{image_key[current_index]}')
+                window['text'].update(image_key[current_index])
+
+        #画像を拡大縮小できるようにする
+        if event == '-decrease-':
+            size = int(values['-resize-'])
+            new_image = resizing_image(images_dict[image_key[current_index]],size)
+            window['-image-'].update(data=new_image)
+
+
+        # if event == '-decrease-':
+        #     window['-image-'].update(zoom=2, subsample=3)
+
 
         #ウインドウのサイズ取得
         # window_size = window.size
@@ -118,6 +138,14 @@ def image_resize(image_path):
         image.save(f'./temp/{file_name}')
 
     else:pass
+
+#特定の画像サイズにリサイジング
+
+def resizing_image(image_path, size):
+    image = Image.open(image_path)
+    image.thumbnail((size,size))
+    return ImageTk.PhotoImage(image)
+
 
 if __name__ == '__main__':
 
